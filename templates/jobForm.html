@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Job Page</title>
+    <h1 class="id">{{.ID}}</h1>
+    <p>Title</p>
+    <input id="title" type="text" title="title" value={{.Title}}><br>
+    <p>URL</p>
+    <input id="url" type="text" url="url" value={{.URL}}><br>
+    <p>Expected Status Code</p>
+    <input id="statusCode" type="text" statusCode="statusCode" value={{.Response.StatusCode}}><br>
+    <button id="submit">SUBMIT</button>
+    <script>
+      // Submit button execution
+      let submit = document.getElementById("submit")
+      submit.addEventListener('click', () => {
+        let id = document.querySelector(".id").textContent
+        let title = document.getElementById('title').value
+        let url = document.getElementById('url').value
+        let statusCode = document.getElementById('statusCode').value
+
+        let payload = {
+          id,
+          title,
+          url,
+          response: {
+            statusCode: parseInt(statusCode),
+          },
+        }
+        if (id == "") {
+          createJob(payload)
+          return
+        }
+        updateJob(payload)
+      })
+
+      // wrappers for updating and creating jobs
+      updateJob = payload => {
+        fetch('http://' + window.location.host + '/jobs/' + payload.id, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+          })
+          .then((res) => {
+            window.location.href = '/status'
+          })
+      }
+
+      createJob = payload => {
+        fetch('http://' + window.location.host + '/jobs', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          })
+          .then((res) => {
+            window.location.href = '/status'
+          })
+      }
+    </script>
+  </head>
+</html>
