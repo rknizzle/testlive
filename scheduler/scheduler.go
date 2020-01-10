@@ -3,7 +3,6 @@
 package scheduler
 
 import (
-	"fmt"
 	"github.com/rknizzle/testlive/datastore"
 	"github.com/rknizzle/testlive/job"
 	"net/http"
@@ -59,8 +58,7 @@ func batchJobs(jobStore datastore.Datastore) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
-		fmt.Println(job)
+		verifyResponse(job, res)
 	}
 }
 
@@ -83,4 +81,14 @@ func execute(job *job.Job, ch chan<- *result, wg *sync.WaitGroup) {
 
 	// send http result to result channel
 	ch <- result
+}
+
+// check that the status code of the http request matches the expected code
+func verifyResponse(job *job.Job, r *result) bool {
+	if r.res.StatusCode == job.Response.StatusCode {
+		job.Status = "passing"
+		return true
+	}
+	job.Status = "failing"
+	return false
 }
