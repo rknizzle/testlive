@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"github.com/gin-gonic/gin"
-	"github.com/rknizzle/testlive/job"
 	"github.com/rknizzle/testlive/datastore"
 	"github.com/rknizzle/testlive/datastore/inmemory"
+	"github.com/rknizzle/testlive/job"
 	"github.com/rknizzle/testlive/scheduler"
+	"io/ioutil"
+	"net/http"
 )
 
 func main() {
@@ -31,6 +32,38 @@ func initRestAPI(jobStore datastore.Datastore) {
 		c.JSON(200, gin.H{
 			"message": "pong",
 		})
+	})
+
+	// load in html templates
+	r.LoadHTMLGlob("templates/*")
+
+	// load status page
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "status.html", nil)
+	})
+
+	// load status page
+	r.GET("/status", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "status.html", nil)
+	})
+
+	// load the job update form for the specified job
+	r.GET("/edit/:id", func(c *gin.Context) {
+		id := c.Param("id")
+
+		j, err := jobStore.Get(id)
+		if err != nil {
+			panic(err)
+		}
+
+		c.HTML(http.StatusOK, "jobForm.html", j)
+	})
+
+	// load the form to create a new job
+	r.GET("/new", func(c *gin.Context) {
+		j := &job.Job{}
+
+		c.HTML(http.StatusOK, "jobForm.html", j)
 	})
 
 	////////////////////////////////////////////
