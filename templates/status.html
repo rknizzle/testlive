@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Status Page</title>
+    <ul id="joblist">
+    </ul>
+    <button id="addButton">ADD</button>
+    <script>
+      getStatus = () => {
+        let ul = document.getElementById("joblist")
+        ul.innerHTML = ""
+
+        const host = 'http://' + window.location.host + '/jobs'
+        fetch(host)
+          .then((res) => {
+            return res.json()
+          })
+          .then((res) => {
+            res.forEach((job) => {
+              let li = document.createElement('li');
+              li.appendChild(document.createTextNode(job.title))
+              var button = document.createElement("button")
+
+              //button.onClick = () => {
+              button.addEventListener('click', () => {
+                console.log('in button')
+                window.location.href = '/edit/' + job.id
+              })
+
+              button.innerHTML = "edit"
+              li.appendChild(button)
+              if (job.status == 'passing') {
+                // change color green
+                li.style.color = 'green'
+              } else if (job.status == 'failing') {
+                // change color to red
+                li.style.color = 'red'
+              }
+              ul.appendChild(li);
+            })
+          })
+          .catch((err) => {})
+      }
+
+      let addButton = document.getElementById("addButton")
+      addButton.addEventListener('click', () => {
+        window.location.href = '/new'
+      })
+
+      getStatus()
+      setInterval(getStatus, 2000)
+    </script>
+  </head>
+</html>
