@@ -9,6 +9,8 @@
     <input id="url" type="text" url="url" value={{.URL}}><br>
     <p>Expected Status Code</p>
     <input id="statusCode" type="text" statusCode="statusCode" value={{.Response.StatusCode}}><br>
+    <p>Frequency in seconds</p>
+    <input id="frequency" type="text" frequency="frequency" value={{.Frequency}}><br>
     <button id="submit">SUBMIT</button>
     <script>
       // Submit button execution
@@ -18,6 +20,7 @@
         let title = document.getElementById('title').value
         let url = document.getElementById('url').value
         let statusCode = document.getElementById('statusCode').value
+        let frequency = document.getElementById('frequency').value
 
         let payload = {
           id,
@@ -26,6 +29,7 @@
           response: {
             statusCode: parseInt(statusCode),
           },
+          frequency: parseInt(frequency),
         }
         if (id == "") {
           createJob(payload)

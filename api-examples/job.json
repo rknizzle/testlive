@@ -2,7 +2,7 @@
   "title": "echo",
   "url": "https://postman-echo.com/get?foo1=bar1&foo2=bar2",
   "httpMethod": "GET",
-  "frequency": 20000,
+  "frequency": 20,
   "response": {
     "statusCode": 200
   }

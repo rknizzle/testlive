@@ -16,8 +16,9 @@ func main() {
 	// inmemory store is default until others are added
 	jobStore := inmemory.New()
 
+	s := &scheduler.Scheduler{}
 	// start periodically firing off job requests
-	go scheduler.Init(jobStore)
+	go s.Init(jobStore)
 
 	// initialize REST API endpoints
 	initRestAPI(jobStore)
