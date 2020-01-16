@@ -30,6 +30,18 @@ func main() {
 	initRestAPI(jobstore)
 }
 
+func sendErrorMessage(w http.ResponseWriter) {
+	e := make(map[string]string)
+	e["error"] = "true"
+	e["message"] = "Operation failed"
+	eData, err := json.Marshal(e)
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(eData)
+}
+
 // Renders the specified html page with the given template data
 func renderPage(w http.ResponseWriter, pageName string, data interface{}) error {
 	page, err := templatesBox.FindString(pageName)
@@ -55,7 +67,7 @@ func ping(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	j["message"] = "pong"
 	jData, err := json.Marshal(j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jData)
@@ -65,7 +77,7 @@ func ping(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 func status(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	err := renderPage(w, "status.html", nil)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 }
 
@@ -75,7 +87,7 @@ func newJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	j := &job.Job{}
 	err := renderPage(w, "jobForm.html", j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 }
 
@@ -85,7 +97,7 @@ func edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	j, err := jobstore.Get(id)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 
 	renderPage(w, "jobForm.html", j)
@@ -100,8 +112,7 @@ func getJobs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	jobs := jobstore.GetAll()
 	j, err := json.Marshal(jobs)
 	if err != nil {
-		// handle error
-		fmt.Println(err)
+		sendErrorMessage(w)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(j)
@@ -114,18 +125,18 @@ func createJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var j job.Job
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 
 	// create a new job object (j) based on the input body
 	err = json.Unmarshal(body, &j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 	jobstore.Create(&j)
 	job, err := json.Marshal(j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(job)
@@ -138,23 +149,23 @@ func updateJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var j job.Job
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 
 	// create a new job object (j) based on the input body
 	err = json.Unmarshal(body, &j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 
 	_, err = jobstore.Update(id, &j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 
 	job, err := json.Marshal(j)
 	if err != nil {
-		panic(err)
+		sendErrorMessage(w)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(job)
