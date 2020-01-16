@@ -2,121 +2,178 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
+	"fmt"
+	"github.com/gobuffalo/packr/v2"
+	"github.com/julienschmidt/httprouter"
 	"github.com/rknizzle/testlive/datastore"
 	"github.com/rknizzle/testlive/datastore/inmemory"
 	"github.com/rknizzle/testlive/job"
 	"github.com/rknizzle/testlive/scheduler"
+	"html/template"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
+
+var jobstore datastore.Datastore
 
 func main() {
 	// create a datastore
 	// inmemory store is default until others are added
-	jobStore := inmemory.New()
+	jobstore = inmemory.New()
 
 	s := &scheduler.Scheduler{}
 	// start periodically firing off job requests
-	go s.Init(jobStore)
+	go s.Init(jobstore)
 
 	// initialize REST API endpoints
-	initRestAPI(jobStore)
+	initRestAPI(jobstore)
 }
+
+// Renders the specified html page with the given template data
+func renderPage(w http.ResponseWriter, pageName string, data interface{}) error {
+	page, err := templatesBox.FindString(pageName)
+	if err != nil {
+		return err
+	}
+
+	t := template.New("page")
+	t, err = t.Parse(string(page))
+	if err != nil {
+		return err
+	}
+	err = t.ExecuteTemplate(w, "page", data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ping
+func ping(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	j := make(map[string]string)
+	j["message"] = "pong"
+	jData, err := json.Marshal(j)
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jData)
+}
+
+// load status page
+func status(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	err := renderPage(w, "status.html", nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// load the form to create a new job
+func newJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	// load the form to create a new job
+	j := &job.Job{}
+	err := renderPage(w, "jobForm.html", j)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// load the job update form for the specified job
+func edit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+
+	j, err := jobstore.Get(id)
+	if err != nil {
+		panic(err)
+	}
+
+	renderPage(w, "jobForm.html", j)
+}
+
+////////////////////////////////////////////
+// /jobs
+////////////////////////////////////////////
+
+// Get all jobs
+func getJobs(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	jobs := jobstore.GetAll()
+	j, err := json.Marshal(jobs)
+	if err != nil {
+		// handle error
+		fmt.Println(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(j)
+}
+
+// Create a new job
+func createJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+	// get request body
+	var j job.Job
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	// create a new job object (j) based on the input body
+	err = json.Unmarshal(body, &j)
+	if err != nil {
+		panic(err)
+	}
+	jobstore.Create(&j)
+	job, err := json.Marshal(j)
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(job)
+}
+
+// Update a job
+func updateJob(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+
+	var j job.Job
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	// create a new job object (j) based on the input body
+	err = json.Unmarshal(body, &j)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = jobstore.Update(id, &j)
+	if err != nil {
+		panic(err)
+	}
+
+	job, err := json.Marshal(j)
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(job)
+}
+
+var templatesBox = packr.New("Templates", "./templates")
 
 func initRestAPI(jobStore datastore.Datastore) {
 
-	r := gin.Default()
+	router := httprouter.New()
+	router.GET("/", status)
+	router.GET("/status", status)
+	router.GET("/ping", ping)
+	router.GET("/new", newJob)
+	router.GET("/edit/:id", edit)
+	router.GET("/jobs", getJobs)
+	router.POST("/jobs", createJob)
+	router.PUT("/jobs/:id", updateJob)
 
-	// ping
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-
-	// load in html templates
-	r.LoadHTMLGlob("templates/*")
-
-	// load status page
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "status.html", nil)
-	})
-
-	// load status page
-	r.GET("/status", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "status.html", nil)
-	})
-
-	// load the job update form for the specified job
-	r.GET("/edit/:id", func(c *gin.Context) {
-		id := c.Param("id")
-
-		j, err := jobStore.Get(id)
-		if err != nil {
-			panic(err)
-		}
-
-		c.HTML(http.StatusOK, "jobForm.html", j)
-	})
-
-	// load the form to create a new job
-	r.GET("/new", func(c *gin.Context) {
-		j := &job.Job{}
-
-		c.HTML(http.StatusOK, "jobForm.html", j)
-	})
-
-	////////////////////////////////////////////
-	// /jobs
-	////////////////////////////////////////////
-
-	// Get all jobs
-	r.GET("/jobs", func(c *gin.Context) {
-		c.JSON(200, jobStore.GetAll())
-	})
-
-	// Create a new job
-	r.POST("/jobs", func(c *gin.Context) {
-		// get request body
-		var j job.Job
-		body, err := ioutil.ReadAll(c.Request.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		// create a new job object (j) based on the input body
-		err = json.Unmarshal(body, &j)
-		if err != nil {
-			panic(err)
-		}
-		jobStore.Create(&j)
-		c.JSON(200, j)
-	})
-
-	// Update a job
-	r.PUT("/jobs/:id", func(c *gin.Context) {
-		id := c.Param("id")
-
-		var j job.Job
-		body, err := ioutil.ReadAll(c.Request.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		// create a new job object (j) based on the input body
-		err = json.Unmarshal(body, &j)
-		if err != nil {
-			panic(err)
-		}
-
-		_, err = jobStore.Update(id, &j)
-		if err != nil {
-			panic(err)
-		}
-		c.JSON(200, j)
-	})
-
-	// Listen and serve on localhost
-	r.Run()
+	fmt.Println("Starting server...")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
