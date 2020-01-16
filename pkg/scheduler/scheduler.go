@@ -3,8 +3,8 @@
 package scheduler
 
 import (
-	"github.com/rknizzle/testlive/datastore"
-	"github.com/rknizzle/testlive/job"
+	"github.com/rknizzle/testlive/pkg/datastore"
+	"github.com/rknizzle/testlive/pkg/job"
 	"net/http"
 	"reflect"
 	"sync"

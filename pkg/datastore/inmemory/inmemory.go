@@ -7,7 +7,7 @@ package inmemory
 import (
 	"errors"
 	"github.com/google/uuid"
-	"github.com/rknizzle/testlive/job"
+	"github.com/rknizzle/testlive/pkg/job"
 )
 
 // inmemory

@@ -1,14 +1,14 @@
-package main
+package testlive
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/gobuffalo/packr/v2"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rknizzle/testlive/datastore"
-	"github.com/rknizzle/testlive/datastore/inmemory"
-	"github.com/rknizzle/testlive/job"
-	"github.com/rknizzle/testlive/scheduler"
+	"github.com/rknizzle/testlive/pkg/datastore"
+	"github.com/rknizzle/testlive/pkg/datastore/inmemory"
+	"github.com/rknizzle/testlive/pkg/job"
+	"github.com/rknizzle/testlive/pkg/scheduler"
 	"html/template"
 	"io/ioutil"
 	"log"

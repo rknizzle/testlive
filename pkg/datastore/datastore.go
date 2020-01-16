@@ -3,7 +3,7 @@
 package datastore
 
 import (
-	"github.com/rknizzle/testlive/job"
+	"github.com/rknizzle/testlive/pkg/job"
 )
 
 type Datastore interface {
