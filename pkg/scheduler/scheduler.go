@@ -16,16 +16,19 @@ type Scheduler struct {
 	jobs []*jobTimer
 }
 
-// start scheduling counter
-func (s *Scheduler) Init(jobstore datastore.Datastore) {
-	// load in all the jobs and
-	var collection []jobTimer
+func New(jobstore datastore.Datastore) *Scheduler {
+	// load in all the jobs with a start counter of 0 seconds
+	var collection []*jobTimer
 	jobs := jobstore.GetAll()
 	for _, j := range jobs {
 		jt := &jobTimer{0, j}
-		collection = append(collection, *jt)
+		collection = append(collection, jt)
 	}
+	return &Scheduler{collection}
+}
 
+// start scheduling counter
+func (s *Scheduler) Init(jobstore datastore.Datastore) {
 	// start the counter
 	start := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
