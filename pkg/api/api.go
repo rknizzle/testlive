@@ -178,6 +178,6 @@ func (a *API) Init() {
 	router.POST("/jobs", a.createJob)
 	router.PUT("/jobs/:id", a.updateJob)
 
-	fmt.Println("Starting server...")
+  fmt.Println("Starting server on localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
