@@ -3,6 +3,8 @@
 package scheduler
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/rknizzle/testlive/pkg/datastore"
 	"github.com/rknizzle/testlive/pkg/job"
 	"net/http"
@@ -118,7 +120,7 @@ func (s *Scheduler) syncDatastore(jobstore datastore.Datastore, count int) {
 		// job must be new and should be added to the collection
 		if match != true {
 			// add the datastore job to the schedulers collection
-			// and make sure it is executed shortly after being added
+			// and make sure it is executed almost immediately after being added
 			newTimer := &jobTimer{count + 3, djob}
 			s.jobs = append(s.jobs, newTimer)
 		}
@@ -148,12 +150,43 @@ func execute(job *job.Job, ch chan<- *result, wg *sync.WaitGroup) {
 
 // check that the status code of the http request matches the expected code
 func verifyResponse(jobstore datastore.Datastore, job *job.Job, r *result) bool {
+
+	fmt.Printf("Response status code: %d\n", r.res.StatusCode)
+	fmt.Printf("Expected status code: %d\n", job.Response.StatusCode)
+
+	// check if the status code matches the expected status code
 	if r.res.StatusCode == job.Response.StatusCode {
-		job.Status = "passing"
-		jobstore.Update(job.ID, job)
-		return true
+		// if the status codes match, check if the response body matches the expected
+		if bodiesAreEqual(r.res, job.Response.Body) {
+			job.Status = "passing"
+			jobstore.Update(job.ID, job)
+			return true
+		}
 	}
 	job.Status = "failing"
 	jobstore.Update(job.ID, job)
 	return false
+}
+
+func bodiesAreEqual(r http.Response, expectedBody interface{}) bool {
+	var body interface{}
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Response body:")
+	fmt.Println(body)
+
+	fmt.Println("Expected body:")
+	fmt.Println(expectedBody)
+
+	eq := reflect.DeepEqual(body, expectedBody)
+	if eq {
+		fmt.Println("They're equal.")
+		return true
+	} else {
+		fmt.Println("They're unequal.")
+		return false
+	}
 }
