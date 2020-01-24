@@ -15,7 +15,8 @@ type Job struct {
 }
 
 type Response struct {
-	StatusCode int `json:"statusCode"`
+	StatusCode int         `json:"statusCode"`
+	Body       interface{} `json:"body"`
 }
 
 func New(id string, title string, url string, httpMethod string, frequency int, status string, response Response) *Job {
